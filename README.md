@@ -1,8 +1,8 @@
-# Icom IC-705 / IC-9700 firmware tools
+# Icom IC-705 / IC-9700 / IC-905 firmware tools
 
 Tools and documentation for the Icom **RZ/A1 firmware family** update container (`.dat`)
-— verified on the **IC-705** and **IC-9700** — including the byte codec used for the
-main CPU, DSP, aux and WLAN images.
+— verified on the **IC-705**, **IC-9700** and **IC-905** — including the byte codec used
+for the main CPU, DSP, aux and WLAN images.
 
 > **No firmware is included.** Bring your own `.dat` from Icom's official firmware
 > update. This repository contains only tooling and format documentation.
@@ -42,13 +42,15 @@ differ, and both are recovered automatically:
 - **`START`** — the main-domain offset (header size), found by locating the ARM reset
   vector table in the decoded bootstrap.
 
-| Radio | KEY | START | Verified |
-|---|---|---|---|
-| IC-705  | `0x19` | `0x64` | ✅ main image + ARM vectors + version string |
-| IC-9700 | `0x2b` | `0x38` | ✅ main image + ARM vectors + version string |
+| Radio | KEY | START | Main version | Verified |
+|---|---|---|---|---|
+| IC-705  | `0x19` | `0x64` | `AVSX4075 V4.52-E00` | ✅ ARM image + vectors + strings |
+| IC-9700 | `0x2b` | `0x38` | `AVSX3913 V5.43-E00` | ✅ ARM image + vectors + strings |
+| IC-905  | `0x7f` | `0x88` | `AVSX4209 V3.92-E00` | ✅ ARM image + vectors + strings |
 
-`icom_rza1_decode.py` needs no configuration — it derives both and decodes the main-CPU
-image for any radio in this family.
+`icom_rza1_decode.py` needs no configuration — it derives the KEY, the start, the main
+stream offset and the output length, and decodes the main-CPU image for any radio in
+this family.
 
 ## Tools
 
@@ -89,7 +91,7 @@ Tests use only synthetic data and small embedded byte constants — no firmware 
 
 ## Scope and limits
 
-- Verified against all IC-705 E releases, the IC-705 J release, and IC-9700.
+- Verified against all IC-705 E releases, the IC-705 J release, IC-9700 and IC-905.
 - Decode and container re-seal are solved and round-trip-verified.
 - The family decoder recovers the main-CPU image on any supported radio; the full
   per-image decoder (`ic705_decode.py`) is IC-705-specific for aux/DSP/WLAN.
