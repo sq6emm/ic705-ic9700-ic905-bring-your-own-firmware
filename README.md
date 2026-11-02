@@ -84,25 +84,34 @@ python3 ic705.py rebuild    out/705E140 705E140.rebuilt.dat
 
 ## Re-packing
 
-`ic_rza1_repack.py` closes the loop: a decompressed main-CPU image can be re-compressed
-and re-sealed into a container the format accepts.
+`ic_rza1_repack.py` closes the loop: a decompressed main-CPU image is re-compressed and
+re-sealed into a container the format accepts.
 
 ```python
-from icom_rza1_decode import decode
-from ic_rza1_repack import repack_ic705
+from ic_rza1_repack import repack
 
 raw = open("705E140.dat", "rb").read()
 image = open("out/705E140/main.bin", "rb").read()   # patch this image as you like
-new_dat = repack_ic705(raw, image)                  # valid MD5, const/DSP/WLAN preserved
+new_dat = repack(raw, image)                        # valid MD5, other components preserved
 open("705E140.patched.dat", "wb").write(new_dat)
 ```
 
-The LZSS encoder round-trips bit-for-bit through the decoder, the autokey transform is
-an exact inverse, and an **identity re-pack** (same image) produces a container with a
-valid MD5 that decodes back to the identical image — only the main slot (re-compressed)
-and the 16-byte MD5 digest change; bootstrap, const/FPGA, DSP and WLAN stay byte-identical.
-Whether a **real radio** accepts a modified image is still unverified (the bootloader may
-check things not visible in the container).
+The LZSS encoder (lazy matching) round-trips bit-for-bit through the decoder and runs ~2%
+smaller than Icom's own, so a re-packed image fits even the tightly-packed models; the
+autokey transform is an exact inverse. An **identity re-pack** (same image) produces a
+valid-MD5 container that re-decodes to the identical image — only the main slot
+(re-compressed) and the 16-byte MD5 digest change; everything else stays byte-identical.
+
+Re-pack status:
+
+| Radio | MD5 region | Identity re-pack |
+|---|---|---|
+| IC-705  | `0x9c0000` | ✅ valid container, re-decodes identical |
+| IC-9700 | `0x800000` | ✅ valid container, re-decodes identical |
+| IC-905  | — | ⏳ different (multi-component) integrity; decode works, re-seal is a follow-up |
+
+(Whether a **real radio** accepts a modified image is still unverified — the bootloader
+may check things not visible in the container.)
 
 ## Tests
 
