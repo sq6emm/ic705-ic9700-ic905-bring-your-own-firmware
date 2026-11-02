@@ -1,0 +1,14 @@
+# Never commit firmware, manuals, schematics or decoded images
+*.dat
+*.pdf
+*.zip
+decoded_firmware/
+decompressed/
+out/
+outdir/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
