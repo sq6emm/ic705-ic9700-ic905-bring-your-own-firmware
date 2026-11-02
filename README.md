@@ -132,6 +132,14 @@ Tests use only synthetic data and small embedded byte constants — no firmware 
   not visible in the container).
 - Requires Python 3; `ic705.py` uses `numpy`.
 
+## Project status
+
+- **Decode:** verified on all IC-705 E/J releases, IC-9700 and IC-905 (main-CPU image recovered).
+- **Re-pack (device-valid container):** IC-705 and IC-9700 ✅; IC-905 pending its (different,
+  multi-component) integrity re-seal.
+- **Next:** emulation-based validation on the shared RZ/A1 SoC (see Acknowledgements), so a rebuilt
+  image can be checked in an emulator **before** any real-device flashing is ever attempted.
+
 ## Acknowledgements
 
 Emulation of these radios builds on the reverse-engineering of the closely related Icom
