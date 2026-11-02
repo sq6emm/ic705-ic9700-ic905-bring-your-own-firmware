@@ -132,6 +132,20 @@ Tests use only synthetic data and small embedded byte constants — no firmware 
   not visible in the container).
 - Requires Python 3; `ic705.py` uses `numpy`.
 
+## Acknowledgements
+
+Emulation of these radios builds on the reverse-engineering of the closely related Icom
+**IC-7300**, which uses the same Renesas RZ/A1 SoC family:
+
+- [jeskko/ic7300-homebrew](https://github.com/jeskko/ic7300-homebrew) (MIT) — a custom
+  **QEMU machine for the RZ/A1**, a homebrew SDK, and container/LZSS tooling. We use its
+  QEMU/SoC work as the reference base for emulating IC-705 / IC-9700 / IC-905 firmware.
+- [zarthur/ic-7300_firmware](https://github.com/zarthur/ic-7300_firmware) (MIT) — IC-7300
+  firmware reverse-engineering research.
+
+These are prior art for the **shared silicon** only; this project targets the
+IC-705 / IC-9700 / IC-905 and does not redistribute their work.
+
 ## Legal
 
 For interoperability and research. **Do not** commit or redistribute Icom firmware,
