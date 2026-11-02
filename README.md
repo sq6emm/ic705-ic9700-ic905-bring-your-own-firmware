@@ -1,7 +1,8 @@
-# IC-705 firmware tools
+# Icom IC-705 / IC-9700 firmware tools
 
-Tools and documentation for the Icom **IC-705** firmware update container (`.dat`),
-including the byte codec used for the main CPU, DSP, aux and WLAN images.
+Tools and documentation for the Icom **RZ/A1 firmware family** update container (`.dat`)
+— verified on the **IC-705** and **IC-9700** — including the byte codec used for the
+main CPU, DSP, aux and WLAN images.
 
 > **No firmware is included.** Bring your own `.dat` from Icom's official firmware
 > update. This repository contains only tooling and format documentation.
@@ -32,11 +33,29 @@ ARMv7-A (main, loader), Thumb / Cortex-M (aux) and a separate DSP image.
 
 Full details, offsets and import addresses: [`IC705_DAT_FORMAT.md`](IC705_DAT_FORMAT.md).
 
+## Firmware family
+
+The same codec is used across Icom's RZ/A1 radios; only **two per-model parameters**
+differ, and both are recovered automatically:
+
+- **`KEY`** — read off the `0xFF` padding ramp (in an `0xFF` run, `stored[pos] == (KEY - pos) & 255`).
+- **`START`** — the main-domain offset (header size), found by locating the ARM reset
+  vector table in the decoded bootstrap.
+
+| Radio | KEY | START | Verified |
+|---|---|---|---|
+| IC-705  | `0x19` | `0x64` | ✅ main image + ARM vectors + version string |
+| IC-9700 | `0x2b` | `0x38` | ✅ main image + ARM vectors + version string |
+
+`icom_rza1_decode.py` needs no configuration — it derives both and decodes the main-CPU
+image for any radio in this family.
+
 ## Tools
 
 | File | Purpose |
 |---|---|
-| `ic705_decode.py` | Decode a `.dat`: verify integrity, reverse the autokey, LZSS-decompress each image, emit components + minimal ELFs + a manifest. |
+| `icom_rza1_decode.py` | **Family decoder.** Auto-derives the per-model KEY and domain start, then recovers the main-CPU image + bootstrap for any supported radio (IC-705, IC-9700, …). No per-model configuration. |
+| `ic705_decode.py` | Full IC-705 decode: verify integrity, reverse the autokey, LZSS-decompress every image (main, aux, DSP, WLAN), emit components + minimal ELFs + a manifest. |
 | `ic705.py` | Container-level decompose / rebuild / verify, with MD5 + size-law re-seal (lossless round-trip). |
 | `ic705_codec.py` | Independent Okumura-LZSS decoder / diagnostics (used for cross-checking). |
 | `extract_streams.py` | Container parser (component map). |
@@ -45,7 +64,10 @@ Full details, offsets and import addresses: [`IC705_DAT_FORMAT.md`](IC705_DAT_FO
 ## Usage
 
 ```sh
-# Decode a firmware file you supply yourself:
+# Family decoder (auto KEY + start) — works on IC-705, IC-9700, ...:
+python3 icom_rza1_decode.py 9700E150.dat out/9700E150
+
+# Full IC-705 decode (all images), on a firmware file you supply yourself:
 python3 ic705_decode.py 705E140.dat out/705E140 --verify-independent
 
 # Container inspection / lossless rebuild:
@@ -67,8 +89,10 @@ Tests use only synthetic data and small embedded byte constants — no firmware 
 
 ## Scope and limits
 
-- Verified against all IC-705 E releases and the J release.
+- Verified against all IC-705 E releases, the IC-705 J release, and IC-9700.
 - Decode and container re-seal are solved and round-trip-verified.
+- The family decoder recovers the main-CPU image on any supported radio; the full
+  per-image decoder (`ic705_decode.py`) is IC-705-specific for aux/DSP/WLAN.
 - Re-packing a *modified* image additionally needs an LZSS encoder; whether a real
   radio accepts a rebuilt image is **unverified** (the bootloader may perform checks
   not visible in the container).
