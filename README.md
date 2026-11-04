@@ -108,10 +108,36 @@ Re-pack status:
 |---|---|---|
 | IC-705  | `0x9c0000` | ✅ valid container, re-decodes identical |
 | IC-9700 | `0x800000` | ✅ valid container, re-decodes identical |
-| IC-905  | — | ⏳ different (multi-component) integrity; decode works, re-seal is a follow-up |
+| IC-905  | — | ❌ **not possible** — firmware is RSA-2048 **signed** (see below); decode works, re-seal needs Icom's private key |
 
-(Whether a **real radio** accepts a modified image is still unverified — the bootloader
-may check things not visible in the container.)
+(On the IC-705 / IC-9700 the radio's SD-card updater verifies a plain MD5 per component, so a correctly
+re-sealed container passes; the IC-905 verifies an RSA signature instead — see below.)
+
+## IC-905 is RSA-signed — not re-packable
+
+Unlike the IC-705 / IC-9700 (and IC-7610), whose container integrity is a plain **MD5** per component
+(an unkeyed checksum, so a rebuilt container can be re-sealed), the **IC-905 firmware is digitally signed.**
+Its on-radio SD-card updater (`FUN_2005efe8`) verifies, for each component, an **RSA-2048 signature over a
+SHA-256 digest** (mbedTLS `rsa_pkcs1_verify`, algorithm id 6, 32-byte hash, 256-byte signature), using a
+public key embedded in the firmware image:
+
+```
+RSA-2048, e = 0x010001 (65537), hash = SHA-256
+modulus (256 bytes, hex) =
+  C07C320D9889A5DAA3766904E5C8DF929EBF4AB3219BE2D30E90B246F01171AE
+  BF7DC0B657C1ED43718F9EEF1D09F562D210FF4BAAA485875260C5907DE6A488
+  B3EB60D2E227E00821D8E6783D55B27E089C5D0D49A4052EA376B7C812A7C2D88
+  897525BDA4048656D47A0FB3FF05DC7B96B3BA2A9D4B4BFD8DEF32E137657D325
+  920EAD843F1E8AE93EFAF8DB3236A0082E867E5E0291D31FF5799401BB466D929
+  70761ED6290C0A54AA70E1E55DE460A66A940497D21E89ED40679C63A6CDAF64D
+  95335F7A498306A81393AD299FCF135558C987B6241A23225C065DFDAE8B72601
+  D3990CEFE0253F89FA28318906ACE9C94377FF8A35678FD7A31C8F9BCF5
+```
+
+The 256-byte field after each component is this signature, **not** an MD5 — which is why a generic MD5
+re-seal cannot produce a valid IC-905 container. Re-signing a modified image requires Icom's **private**
+key (not derivable from the public key), so re-packing a *modified* IC-905 image is **cryptographically
+infeasible**. Decoding (reading the main-CPU image) still works.
 
 ## Tests
 
@@ -135,8 +161,8 @@ Tests use only synthetic data and small embedded byte constants — no firmware 
 ## Project status
 
 - **Decode:** verified on all IC-705 E/J releases, IC-9700 and IC-905 (main-CPU image recovered).
-- **Re-pack (device-valid container):** IC-705 and IC-9700 ✅; IC-905 pending its (different,
-  multi-component) integrity re-seal.
+- **Re-pack (device-valid container):** IC-705 and IC-9700 ✅; **IC-905 is not re-packable** — its firmware
+  is RSA-2048 + SHA-256 **signed**, so a modified image cannot be re-sealed without Icom's private key.
 - **Next:** emulation-based validation on the shared RZ/A1 SoC (see Acknowledgements), so a rebuilt
   image can be checked in an emulator **before** any real-device flashing is ever attempted.
 
