@@ -33,6 +33,10 @@ ARMv7-A (main, loader), Thumb / Cortex-M (aux) and a separate DSP image.
 
 Full details, offsets and import addresses: [`IC705_DAT_FORMAT.md`](IC705_DAT_FORMAT.md).
 
+How that decoded body is stored in the radio's on-chip QSPI flash (IS25LP128, XIP at
+`0x18000000`), and how to read or write it directly with a CH341A programmer:
+[`IC705_FLASH_LAYOUT.md`](IC705_FLASH_LAYOUT.md).
+
 ## Firmware family
 
 The same codec is used across Icom's RZ/A1 radios; only **two per-model parameters**
