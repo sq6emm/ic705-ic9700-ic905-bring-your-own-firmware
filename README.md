@@ -37,6 +37,10 @@ How that decoded body is stored in the radio's on-chip QSPI flash (IS25LP128, XI
 `0x18000000`), and how to read or write it directly with a CH341A programmer:
 [`IC705_FLASH_LAYOUT.md`](IC705_FLASH_LAYOUT.md).
 
+The IC-9700 equivalent (S25FL127S, two A/B firmware slots plus a slot marker, graphics
+pack chained behind the main image, direct CH341A access):
+[`IC9700_FLASH_LAYOUT.md`](IC9700_FLASH_LAYOUT.md).
+
 ## Firmware family
 
 The same codec is used across Icom's RZ/A1 radios; only **two per-model parameters**
@@ -61,7 +65,7 @@ this family.
 | File | Purpose |
 |---|---|
 | `icom_rza1_decode.py` | **Family decoder.** Auto-derives the per-model KEY and domain start, then recovers the main-CPU image + bootstrap for any supported radio (IC-705, IC-9700, …). No per-model configuration. |
-| `ic_rza1_repack.py` | **Re-packer.** LZSS encoder + autokey encoder; re-seals a (modified) main-CPU image into a device-valid IC-705 `.dat` (valid MD5, same length). |
+| `ic_rza1_repack.py` | **Re-packer.** LZSS encoder + autokey encoder; re-seals a (modified) main-CPU image into a device-valid IC-705 / IC-9700 `.dat` (valid MD5, same length; blobs chained behind the main stream move with it, fixed-offset content stays put). |
 | `ic705_decode.py` | Full IC-705 decode: verify integrity, reverse the autokey, LZSS-decompress every image (main, aux, DSP, WLAN), emit components + minimal ELFs + a manifest. |
 | `ic705.py` | Container-level decompose / rebuild / verify, with MD5 + size-law re-seal (lossless round-trip). |
 | `ic705_codec.py` | Independent Okumura-LZSS decoder / diagnostics (used for cross-checking). |
@@ -111,7 +115,7 @@ Re-pack status:
 | Radio | MD5 region | Identity re-pack |
 |---|---|---|
 | IC-705  | `0x9c0000` | ✅ valid container, re-decodes identical |
-| IC-9700 | `0x800000` | ✅ valid container, re-decodes identical |
+| IC-9700 | `0x800000` | ✅ valid container, re-decodes identical; the graphics pack chained behind the main stream is moved along with it ([layout](IC9700_FLASH_LAYOUT.md#inside-a-slot)) |
 | IC-905  | — | ❌ **not possible** — firmware is RSA-2048 **signed** (see below); decode works, re-seal needs Icom's private key |
 
 (On the IC-705 / IC-9700 the radio's SD-card updater verifies a plain MD5 per component, so a correctly

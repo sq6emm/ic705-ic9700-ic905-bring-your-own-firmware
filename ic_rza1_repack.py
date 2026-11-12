@@ -129,19 +129,44 @@ def repack(raw, new_image):
     words = [struct.unpack_from("<I", body, BOOTSTRAP + o)[0] for o in range(0, stream_off - BOOTSTRAP, 4)]
     out_len = len(new_image)
     _, consumed = lzss_decompress(body[stream_off:], max(words) if words else out_len)
-    next_comp = stream_off + consumed
+
+    # Chained blobs: on the IC-9700 a graphics pack (u32 csz, u32 osz, LZSS data) follows
+    # the main stream DIRECTLY and the app locates it as slot + main_csz + 8. Such blobs
+    # must move together with the stream; content after the FF gap sits at fixed offsets.
+    chain = b""
+    two_word_hdr = (stream_off - BOOTSTRAP) == 8
+    if two_word_hdr:
+        old_csz = words[0]
+        if old_csz < consumed or any(b != 0xFF for b in body[stream_off + consumed:stream_off + old_csz]):
+            raise ValueError("main header csz does not match the stream")
+        p = stream_off + old_csz
+        while p + 8 <= len(body) and body[p:p + 8] != b"\xff" * 8:
+            bcsz, bosz = struct.unpack_from("<II", body, p)
+            out, used = lzss_decompress(body[p + 8:p + 8 + bcsz], bosz)
+            if len(out) != bosz or used > bcsz:
+                raise ValueError("unrecognised data right after the main stream at body 0x%x" % p)
+            p += 8 + bcsz
+        chain = body[stream_off + old_csz:p]
+        chain_end = p
+    else:
+        chain_end = stream_off + consumed
+    next_comp = chain_end
     while next_comp < len(body) and body[next_comp] == 0xFF:
         next_comp += 1
 
     stream = lzss_compress(new_image)
-    header = struct.pack("<II", len(stream), out_len) if (stream_off - BOOTSTRAP) == 8 \
+    if chain:                                   # keep the stock 4-byte alignment of the chain
+        stream += b"\xff" * (-len(stream) % 4)
+    header = struct.pack("<II", len(stream), out_len) if two_word_hdr \
         else struct.pack("<I", out_len)
-    main = header + stream
+    main = header + stream + chain
     slot = next_comp - BOOTSTRAP
     if len(main) > slot:
-        raise ValueError("re-compressed main (%d) exceeds the %d-byte slot" % (len(main), slot))
+        raise ValueError("re-compressed main (+chained blobs) (%d) exceeds the %d-byte slot" % (len(main), slot))
     main += b"\xff" * (slot - len(main))
     new_body = body[:BOOTSTRAP] + main + body[next_comp:]
+    if chain:                                   # the app must find the chain at slot + csz + 8
+        assert new_body[BOOTSTRAP + 8 + len(stream):BOOTSTRAP + 8 + len(stream) + len(chain)] == chain
     assert len(new_body) == digest_at - start
     new_domain = autokey_encode(new_body, start, key, iv)
     digest = hashlib.md5(new_domain).digest()
