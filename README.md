@@ -130,7 +130,7 @@ and data as bytes, plus references of the form *copy N bytes from address X of t
 official image / official bootstrap*. You download the official
 `.dat` from Icom yourself and build the result locally:
 
-**Easiest: use the web patcher** — https://sq6emm.github.io/ic705-ic9700-ic905-bring-your-own-firmware/ —
+**Easiest: use the web patcher** — https://sq6emm.github.io/icom-custom-firmware/ (repository: https://github.com/sq6emm/icom-custom-firmware) —
 it runs entirely in your browser (the file never leaves your computer) and offers exactly one
 patch per official file: the latest release. Or on the command line:
 
