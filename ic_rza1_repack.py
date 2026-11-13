@@ -104,8 +104,13 @@ def _find_md5_region(raw, start):
     return None
 
 
-def repack(raw, new_image):
+def repack(raw, new_image, new_bootstrap=None):
     """Return a device-valid .dat carrying ``new_image`` as the main-CPU image.
+
+    ``new_bootstrap`` (optional, exactly 0x10000 bytes) replaces body[0:0x10000], i.e. the
+    bootstrap + loader the radio's SD updater writes to flash sector 0. Its bootloader tag at
+    0x4f00..0x4f10 must equal the stock one (else the updater takes its legacy path and
+    rewrites slot A from flash 0).
 
     Works for radios with a single prefix MD5 over the main domain (IC-705, IC-9700,
     IC-7610). Raises ValueError for a layout it does not cover (e.g. IC-905) or if the
@@ -164,7 +169,16 @@ def repack(raw, new_image):
     if len(main) > slot:
         raise ValueError("re-compressed main (+chained blobs) (%d) exceeds the %d-byte slot" % (len(main), slot))
     main += b"\xff" * (slot - len(main))
-    new_body = body[:BOOTSTRAP] + main + body[next_comp:]
+    boot = body[:BOOTSTRAP]
+    if new_bootstrap is not None:
+        if len(new_bootstrap) != BOOTSTRAP:
+            raise ValueError("bootstrap must be exactly 0x%x bytes" % BOOTSTRAP)
+        if new_bootstrap[0x4F00:0x4F10] != boot[0x4F00:0x4F10]:
+            raise ValueError("bootloader tag at 0x4f00 differs from the stock container")
+        if new_bootstrap[:8] != ARM_VECTORS:
+            raise ValueError("bootstrap does not start with the ARM vector table")
+        boot = bytes(new_bootstrap)
+    new_body = boot + main + body[next_comp:]
     if chain:                                   # the app must find the chain at slot + csz + 8
         assert new_body[BOOTSTRAP + 8 + len(stream):BOOTSTRAP + 8 + len(stream) + len(chain)] == chain
     assert len(new_body) == digest_at - start

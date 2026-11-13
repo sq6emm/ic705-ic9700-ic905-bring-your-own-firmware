@@ -121,6 +121,37 @@ Re-pack status:
 (On the IC-705 / IC-9700 the radio's SD-card updater verifies a plain MD5 per component, so a correctly
 re-sealed container passes; the IC-905 verifies an RSA signature instead — see below.)
 
+## Patches — build a tested firmware from your own official file
+
+No modified firmware is distributed. A patch in [`patches/`](patches/) holds only the
+changes to the main-CPU image (and, for builds with a custom bootloader, to the 64 KiB
+bootstrap at the start of the container — optional `"bootstrap"` section): our own code
+and data as bytes, plus references of the form *copy N bytes from address X of the
+official image / official bootstrap*. You download the official
+`.dat` from Icom yourself and build the result locally:
+
+**Easiest: use the web patcher** — https://sq6emm.github.io/ic705-ic9700-ic905-bring-your-own-firmware/ —
+it runs entirely in your browser (the file never leaves your computer) and offers exactly one
+patch per official file: the latest release. Or on the command line:
+
+```sh
+python3 icom_patch.py patches/9700E150_trv16c.json 9700E150.dat 9700E150_trv16c.dat
+```
+
+`icom_patch.py` checks the MD5 of your input file, decodes it, applies the patch,
+re-packs it (`ic_rza1_repack.repack(raw, image, new_bootstrap=...)`; a replacement
+bootstrap must keep the stock bootloader tag at 0x4f00, otherwise it is refused), and writes the output **only if its MD5 equals the MD5 of the build that
+was tested**. You get a byte-identical copy of that build or nothing.
+
+| Patch | Official input (MD5) | Output (MD5) |
+|---|---|---|
+| `9700E150_trv16c.json` (IC-9700 TRV 1.6c, includes the custom A/B bootloader) | `9700E150.dat` `6f04fd2248ba39254ed01b30b52ce36a` | `1a9d78b5a6295b8217d7cbe26c02d728` |
+
+IC-705 E/J releases will be added after hardware verification.
+
+Flashing modified firmware is at your own risk and may void the warranty. Transmitting
+is your responsibility under your licence and national band plan.
+
 ## IC-905 is RSA-signed — not re-packable
 
 Unlike the IC-705 / IC-9700 (and IC-7610), whose container integrity is a plain **MD5** per component

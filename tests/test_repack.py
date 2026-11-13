@@ -39,5 +39,42 @@ class RepackContainerTest(unittest.TestCase):
         _selftest("705E140.dat")
 
 
+class PatchOpsTests(unittest.TestCase):
+    def test_bootstrap_section_ops(self):
+        from icom_patch import apply_ops
+        boot = bytes(range(256)) * 256                       # 64 KiB stand-in
+        sec = {"ops": [{"at": "0x10", "hex": "deadbeef"},
+                       {"at": "0x100", "copy_from": "0x20", "len": 8}]}
+        out = apply_ops(boot, sec)
+        self.assertEqual(len(out), len(boot))
+        self.assertEqual(out[0x10:0x14], bytes.fromhex("deadbeef"))
+        self.assertEqual(out[0x100:0x108], boot[0x20:0x28])
+        with self.assertRaises(ValueError):
+            apply_ops(boot, {"ops": [{"at": "0xfffe", "hex": "000000"}]})
+
+    def test_main_ops_relative_to_load_address(self):
+        from icom_patch import apply_ops
+        stock = bytes(range(64))
+        patch = {"load_address": 0x1000, "image_size": 72,
+                 "ops": [{"at": "0x1040", "copy_from": "0x1000", "len": 8}]}
+        out = apply_ops(stock, patch)
+        self.assertEqual(out, stock + stock[:8])
+
+
+@unittest.skipUnless(os.path.exists("9700E150.dat"), "needs a user-supplied IC-9700 .dat")
+class RepackBootstrapTest(unittest.TestCase):
+    def test_new_bootstrap_identity_and_tag_check(self):
+        from icom_patch import extract
+        from ic_rza1_repack import repack
+        raw = open("9700E150.dat", "rb").read()
+        image, boot = extract(raw)
+        self.assertEqual(repack(raw, image, new_bootstrap=boot), repack(raw, image))
+        bad = bytearray(boot); bad[0x4F00] ^= 1
+        with self.assertRaises(ValueError):
+            repack(raw, image, new_bootstrap=bytes(bad))
+        with self.assertRaises(ValueError):
+            repack(raw, image, new_bootstrap=boot[:-1])
+
+
 if __name__ == "__main__":
     unittest.main()

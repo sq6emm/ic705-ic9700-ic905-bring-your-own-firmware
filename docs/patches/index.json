@@ -1,0 +1,34 @@
+{
+  "generated_from": "releases.json",
+  "releases": [
+    {
+      "input": {
+        "file": "9700E150.dat",
+        "md5": "6f04fd2248ba39254ed01b30b52ce36a",
+        "radio": "IC-9700",
+        "region": "E",
+        "version": "1.50"
+      },
+      "release": {
+        "name": "9700E150_trv16c",
+        "patch_file": "9700E150_trv16c.json",
+        "patch_sha256": "39e22d568a59d4dc45f96bfc47f20f3d0a49917689579ba5568464a12c082dac",
+        "label": "1.6c",
+        "date": "2026-11-13",
+        "title": "IC-9700 E 1.50 + transverter support 1.6c",
+        "description": "IC-9700 E1.50 + TRV 1.6c + A/B bootloader 1.5d (as tested)",
+        "features": [
+          "Transverter support: 8 slots (RF / IF), one active for MAIN and SUB",
+          "RF frequency shown on the display, CI-V frequency read/write in RF terms",
+          "SET > Transverter menu for slot entry on the radio",
+          "Per-slot maximum TX power, TX delay and PTT enable/inhibit",
+          "Custom A/B boot-slot toggle bootloader 1.5d"
+        ],
+        "output_md5": "1a9d78b5a6295b8217d7cbe26c02d728",
+        "output_main_md5": "297b3c92c67ca326e75ec2982b4088cf",
+        "bootloader": true,
+        "tx_outside_amateur_bands": false
+      }
+    }
+  ]
+}
